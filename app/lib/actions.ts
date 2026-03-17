@@ -3,7 +3,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import postgres from "postgres";
-import { stat } from "fs";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -18,7 +17,6 @@ const FormSchema = z.object({
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 
 export async function createInvoice(formData: FormData) {
-  console.log("Raw Status Value:", formData.get("status")); // <--- Add this
   const { customerId, amount, status } = CreateInvoice.parse({
     customerId: formData.get("customerId"),
     amount: formData.get("amount"),
@@ -34,9 +32,7 @@ export async function createInvoice(formData: FormData) {
   `;
   } catch (error) {
     console.error(error);
-    return {
-      message: "Database error: Failed to create invoice",
-    };
+    throw new Error("Database error: Failed to create invoice");
   }
 
   revalidatePath("/dashboard/invoices");
@@ -62,7 +58,7 @@ export async function updateInvoice(id: string, formData: FormData) {
   } catch (error) {
     // We'll also log the error to the console for now
     console.error(error);
-    return { message: "Database Error: Failed to Update Invoice." };
+    throw new Error("Database Error: Failed to Update Invoice.");
   }
 
   revalidatePath("/dashboard/invoices");
